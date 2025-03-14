@@ -137,7 +137,7 @@ jobs:
       - name: Check poetry lock file consistency
         run: ./test/scripts/gh-actions/check-poetry-lockfile.sh
 
-  transformer-runtime-build:
+  huggingface-server-cpu-runtime-build:
     runs-on: ubuntu-latest
     needs: [poetry-check]
     steps:
@@ -154,7 +154,7 @@ jobs:
         run: |
           sudo mkdir -p ${DOCKER_IMAGES_PATH}
           sudo chown -R $USER ${DOCKER_IMAGES_PATH}
-          ./test/scripts/gh-actions/build-server-runtimes.sh transformer
+          ./test/scripts/gh-actions/build-server-runtimes.sh huggingface_server_cpu
           docker image ls
           sudo ls -lh ${DOCKER_IMAGES_PATH}
 
@@ -183,7 +183,7 @@ jobs:
         run: |
           sudo mkdir -p ${DOCKER_IMAGES_PATH}
           sudo chown -R $USER ${DOCKER_IMAGES_PATH}
-          ./test/scripts/gh-actions/build-server-runtimes.sh predictor
+          ./test/scripts/gh-actions/build-server-runtimes.sh predictor,transformer
           docker image ls
           sudo ls -lh ${DOCKER_IMAGES_PATH}
 
@@ -224,6 +224,14 @@ jobs:
         with:
           name: ${{ env.PREDICTOR_ARTIFACT_PREFIX }}-${{ env.PADDLE_IMG }}-${{ github.sha }}
           path: ${{ env.DOCKER_IMAGES_PATH }}/${{ env.PADDLE_IMG }}-${{ github.sha }}
+          compression-level: 0
+          if-no-files-found: error
+
+      - name: Upload image transformer image
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TRANSFORMER_ARTIFACT_PREFIX }}-${{ env.IMAGE_TRANSFORMER_IMG }}-${{ github.sha }}
+          path: ${{ env.DOCKER_IMAGES_PATH }}/${{ env.IMAGE_TRANSFORMER_IMG }}-${{ github.sha }}
           compression-level: 0
           if-no-files-found: error
 

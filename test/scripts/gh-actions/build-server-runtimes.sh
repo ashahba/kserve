@@ -77,6 +77,9 @@ pushd python >/dev/null
       -o type=docker,dest="${DOCKER_IMAGES_PATH}/${CUSTOM_TRANSFORMER_GRPC_IMG}-${GITHUB_SHA}",compression-level=0 .
     echo "Disk usage after Building image transformer gRPC image:"
         df -hT
+  fi
+
+  if [[ " ${types[*]} " =~ "huggingface_server_cpu" ]]; then
     echo "Building Huggingface CPU image"
     docker buildx build -t "${HUGGINGFACE_CPU_IMG_TAG}" -f huggingface_server_cpu.Dockerfile \
       -o type=docker,dest="${DOCKER_IMAGES_PATH}/${HUGGINGFACE_IMG}-${GITHUB_SHA}",compression-level=0 .
