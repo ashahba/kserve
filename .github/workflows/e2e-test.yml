@@ -253,10 +253,10 @@ jobs:
           docker image ls
           sudo ls -lh ${DOCKER_IMAGES_PATH}
 
-      - name: Upload huggingface image
+      - name: Upload huggingface OpenVino image
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.HUGGINGFACE_IMG }}-${{ github.sha }}
+          name: ${{ env.HUGGINGFACE_IMG }}-${{ github.sha }}-openvino
           path: ${{ env.DOCKER_IMAGES_PATH }}/${{ env.HUGGINGFACE_IMG }}-${{ github.sha }}-openvino
           compression-level: 0
           if-no-files-found: error
