@@ -328,6 +328,9 @@ jobs:
           cd python/huggingfaceserver
           bash tests/setup_vllm.sh
           poetry run -- pytest --cov=huggingfaceserver -vv
+        env:
+          VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
+          VLLM_ENGINE_ITERATION_TIMEOUT_S: 3600
 
       - name: Free space after cpu tests
         run: |
