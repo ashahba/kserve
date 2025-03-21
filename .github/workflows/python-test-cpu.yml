@@ -2,7 +2,10 @@ name: Python package CPU
 
 on:
   push:
-    branches: [master, release*]
+    branches:
+      - 'master'
+      - 'release**'
+      - '**/cpu-dockerfile**'
   pull_request:
     branches: []
   workflow_dispatch:
