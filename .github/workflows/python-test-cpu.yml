@@ -116,7 +116,6 @@ jobs:
           poetry run -- pytest --cov=huggingfaceserver -vv tests/test_vllm_chat_with_tools.py
           poetry run -- pytest --cov=huggingfaceserver -vv tests/test_vllm_generative.py
         env:
-          VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
           VLLM_ENGINE_ITERATION_TIMEOUT_S: 3600
 
       - name: Free space after tests
