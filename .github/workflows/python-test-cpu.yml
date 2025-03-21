@@ -1,0 +1,118 @@
+name: Python package CPU
+
+on:
+  push:
+    branches: [master, release*]
+  pull_request:
+    branches: []
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    name: Lint
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+      - name: Set up Python environment ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Lint with flake8
+        uses: py-actions/flake8@v2
+        with:
+          args: "--config .flake8"
+          path: "."
+      - name: Check formatting with black
+        uses: psf/black@stable
+        with:
+          options: "--check --diff --config python/pyproject.toml"
+          src: "."
+          version: "~= 24.3"
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Free-up disk space
+        uses: ./.github/actions/free-up-disk-space
+
+      - name: Set up Python ${{ matrix.python-version }}
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry and version plugin
+        run: ./test/scripts/gh-actions/setup-poetry.sh
+
+      - name: Configure Poetry cache
+        run: |
+          sudo mkdir -p /mnt/poetry
+          # change permission so that poetry can install without sudo
+          sudo chown -R $USER /mnt/poetry
+          poetry config cache-dir /mnt/poetry
+
+      # load poetry cache if cache exists
+      - name: Load poetry cache
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: /mnt/poetry
+          key: poetry-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      # ----------------------------------------Huggingface Server Unit Tests------------------------------------------------
+      # load cached huggingface venv if cache exists
+      - name: Load cached huggingface venv
+        id: huggingface-dependencies
+        uses: actions/cache@v4
+        with:
+          path: /mnt/python/huggingfaceserver-venv
+          key: huggingface-cpu-venv-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/kserve/poetry.lock', '**/huggingfaceserver/poetry.lock') }}
+      # install huggingface server dependencies if cache does not exist
+      - name: Configure poetry for huggingface server
+        run: |
+          poetry config virtualenvs.path /mnt/python/huggingfaceserver-venv
+          poetry config virtualenvs.in-project false
+      # make poetry visible for vllm installation
+      - name: Install Poetry Plugins
+        run: |
+          poetry self add poetry-version-plugin
+      - name: Install huggingface dependencies
+        run: |
+          sudo mkdir -p /mnt/python/huggingfaceserver-venv
+          # change permission so that poetry can install without sudo
+          sudo chown -R $USER /mnt/python/huggingfaceserver-venv
+          cd python/huggingfaceserver
+          make install_cpu_dependencies
+
+      - name: Install huggingface server
+        run: |
+          cd python/huggingfaceserver
+          make dev_install
+      - name: Test huggingfaceserver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libnuma-dev
+          cd python/huggingfaceserver
+          bash tests/setup_vllm.sh
+          poetry run -- pytest --cov=huggingfaceserver -vv
+        env:
+          VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
+          VLLM_ENGINE_ITERATION_TIMEOUT_S: 3600
+
+      - name: Free space after tests
+        run: |
+          df -hT
