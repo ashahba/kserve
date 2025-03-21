@@ -111,7 +111,10 @@ jobs:
           sudo apt-get install -y libnuma-dev
           cd python/huggingfaceserver
           bash tests/setup_vllm.sh
-          poetry run -- pytest --cov=huggingfaceserver -vv
+          poetry run -- pytest --cov=huggingfaceserver -vv -k 'not test_vllm'
+          poetry run -- pytest --cov=huggingfaceserver -vv tests/test_vllm_chat_with_reasoning.py
+          poetry run -- pytest --cov=huggingfaceserver -vv tests/test_vllm_chat_with_tools.py
+          poetry run -- pytest --cov=huggingfaceserver -vv tests/test_vllm_generative.py
         env:
           VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
           VLLM_ENGINE_ITERATION_TIMEOUT_S: 3600
