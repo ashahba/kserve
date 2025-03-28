@@ -216,7 +216,6 @@ jobs:
 
   openvino-predictor-runtime-build:
     runs-on: ubuntu-latest
-    needs: [poetry-check]
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
